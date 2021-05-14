@@ -1,7 +1,10 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../widgets/auth/auth_form.dart';
 
@@ -17,11 +20,12 @@ class _AuthScreenState extends State<AuthScreen> {
   void _submitAuthForm(
     String email,
     String password,
-    String username,
+    String userName,
+    File image,
     bool isLogin,
     BuildContext ctx,
   ) async {
-    AuthResult authResult;
+    UserCredential authResult;
 
     try {
       setState(() {
@@ -38,12 +42,22 @@ class _AuthScreenState extends State<AuthScreen> {
           password: password,
         );
 
-        await Firestore.instance
+        final ref = FirebaseStorage.instance
+            .ref()
+            .child('user_image')
+            .child(authResult.user.uid + '.jpg');
+
+        await ref.putFile(image);
+
+        final url = await ref.getDownloadURL();
+
+        await FirebaseFirestore.instance
             .collection('users')
-            .document(authResult.user.uid)
-            .setData({
-          'username': username,
+            .doc(authResult.user.uid)
+            .set({
+          'userName': userName,
           'email': email,
+          'image_url': url,
         });
 
         // Navigate
